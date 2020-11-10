@@ -2,7 +2,7 @@
  * @Author: gitsrc
  * @Date: 2020-11-09 16:31:33
  * @LastEditors: gitsrc
- * @LastEditTime: 2020-11-10 13:27:19
+ * @LastEditTime: 2020-11-10 15:05:07
  * @FilePath: /influx-proxy-gitsrc/main.go
  */
 
@@ -61,6 +61,22 @@ func main() {
 	if err != nil {
 		log.Fatalln("create data dir error")
 		return
+	}
+
+	//判断是够开启UDP-Server
+	if cfg.UDPEnable {
+		//开启UDP
+		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Println("UDP Server recover", r)
+				}
+			}()
+			err := service.NewUDPService(cfg).ListenAndServe()
+			if err != nil {
+				log.Println(err)
+			}
+		}()
 	}
 
 	mux := http.NewServeMux()

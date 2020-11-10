@@ -58,6 +58,9 @@ type ProxyConfig struct {
 	HTTPSEnabled    bool            `json:"https_enabled"`
 	HTTPSCert       string          `json:"https_cert"`
 	HTTPSKey        string          `json:"https_key"`
+	UDPEnable       bool            `json:"udp_enable"`
+	UDPBind         string          `json:"udp_bind"`
+	UDPDataBase     string          `json:"udp_database"`
 }
 
 //NewFileConfig is create a config from file

@@ -26,9 +26,7 @@
         }
     ],
     "listen_addr": "0.0.0.0:7076",
-    "db_list": [
-        "db1"
-    ],
+    "db_list": [],
     "data_dir": "data",
     "tlog_dir": "log",
     "hash_key": "idx",
@@ -42,9 +40,12 @@
     "username": "",
     "password": "",
     "auth_secure": false,
-    "write_tracing": true,
+    "write_tracing": false,
     "query_tracing": true,
     "https_enabled": false,
     "https_cert": "",
-    "https_key": ""
+    "https_key": "",
+    "udp_enable": true,
+    "udp_bind": "0.0.0.0:8076",
+    "udp_database": "msp"
 }
