@@ -1,3 +1,11 @@
+/*
+ * @Author: gitsrc
+ * @Date: 2020-11-09 16:31:33
+ * @LastEditors: gitsrc
+ * @LastEditTime: 2020-11-10 13:27:19
+ * @FilePath: /influx-proxy-gitsrc/main.go
+ */
+
 package main
 
 import (
@@ -15,22 +23,24 @@ import (
 )
 
 var (
-	ConfigFile string
-	Version    bool
-	GitCommit  = "not build"
-	BuildTime  = "not build"
+	configFile string
+	version    bool
+	//GitCommit is commit id
+	GitCommit = "not build"
+	//BuildTime is build time
+	BuildTime = "not build"
 )
 
 func init() {
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Lshortfile)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.Llongfile)
 	log.SetOutput(os.Stdout)
-	flag.StringVar(&ConfigFile, "config", "proxy.json", "proxy config file")
-	flag.BoolVar(&Version, "version", false, "proxy version")
+	flag.StringVar(&configFile, "config", "proxy.json", "proxy config file")
+	flag.BoolVar(&version, "version", false, "proxy version")
 	flag.Parse()
 }
 
 func main() {
-	if Version {
+	if version {
 		fmt.Printf("Version:    %s\n", backend.Version)
 		fmt.Printf("Git commit: %s\n", GitCommit)
 		fmt.Printf("Build time: %s\n", BuildTime)
@@ -39,9 +49,9 @@ func main() {
 		return
 	}
 
-	cfg, err := backend.NewFileConfig(ConfigFile)
+	cfg, err := backend.NewFileConfig(configFile) //Read config file and create config object.
 	if err != nil {
-		fmt.Printf("illegal config file: %s\n", err)
+		log.Printf("illegal config file: %s\n", err)
 		return
 	}
 	log.Printf("version: %s, commit: %s, build: %s", backend.Version, GitCommit, BuildTime)
@@ -54,7 +64,7 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	service.NewHttpService(cfg).Register(mux)
+	service.NewHTTPService(cfg).Register(mux)
 
 	server := &http.Server{
 		Addr:        cfg.ListenAddr,

@@ -6,8 +6,15 @@
                 {
                     "name": "influxdb-1-1",
                     "url": "http://192.168.2.97:8086",
-                    "username": "root",
-                    "password": "123456",
+                    "username": "",
+                    "password": "",
+                    "auth_secure": false
+                },
+                {
+                    "name": "influxdb-1-2",
+                    "url": "http://192.168.2.97:8086",
+                    "username": "",
+                    "password": "",
                     "auth_secure": false
                 }
             ]
@@ -18,16 +25,24 @@
                 {
                     "name": "influxdb-2-1",
                     "url": "http://192.168.2.80:8086",
-                    "username": "root",
-                    "password": "123456",
+                    "username": "",
+                    "password": "",
+                    "auth_secure": false
+                },
+                {
+                    "name": "influxdb-2-2",
+                    "url": "http://192.168.2.80:8086",
+                    "username": "",
+                    "password": "",
                     "auth_secure": false
                 }
             ]
         }
     ],
-    "listen_addr": "0.0.0.0:7076",
+    "listen_addr": ":7076",
     "db_list": [
-        "db1"
+        "db1",
+        "db2"
     ],
     "data_dir": "data",
     "tlog_dir": "log",
@@ -42,8 +57,8 @@
     "username": "",
     "password": "",
     "auth_secure": false,
-    "write_tracing": true,
-    "query_tracing": true,
+    "write_tracing": false,
+    "query_tracing": false,
     "https_enabled": false,
     "https_cert": "",
     "https_key": ""
