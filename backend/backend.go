@@ -147,17 +147,18 @@ func (ib *Backend) FlushBuffer(db string) (err error) {
 	ib.wg.Add(1)
 	ib.pool.Submit(func() {
 		defer ib.wg.Done()
-		var buf bytes.Buffer
-		err = Compress(&buf, p)
-		if err != nil {
-			log.Print("compress buffer error: ", err)
-			return
-		}
+		//关闭压缩、此处有内存泄漏
+		// var buf bytes.Buffer
+		// err = Compress(&buf, p)
+		// if err != nil {
+		// 	log.Print("compress buffer error: ", err)
+		// 	return
+		// }
 
-		p = buf.Bytes()
+		// p = buf.Bytes()
 
 		if ib.Active {
-			err = ib.WriteCompressed(db, p)
+			err = ib.WriteUNCompressed(db, p)
 			switch err {
 			case nil:
 				return
@@ -236,7 +237,8 @@ func (ib *Backend) Rewrite() (err error) {
 		log.Print("rewrite db unescape error: ", err)
 		return
 	}
-	err = ib.WriteCompressed(db, p[1])
+	//此处切换为非压缩写入，压缩有内存泄漏
+	err = ib.WriteUNCompressed(db, p[1])
 
 	switch err {
 	case nil:

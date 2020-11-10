@@ -170,19 +170,28 @@ func (hb *HttpBackend) Ping() bool {
 	return true
 }
 
+//去除压缩Compress，存在内存泄漏
 func (hb *HttpBackend) Write(db string, p []byte) (err error) {
-	var buf bytes.Buffer
-	err = Compress(&buf, p)
-	if err != nil {
-		log.Print("compress error: ", err)
-		return
-	}
-	return hb.WriteStream(db, &buf, true)
+	// var buf bytes.Buffer
+	// err = Compress(&buf, p)
+	// if err != nil {
+	// 	log.Print("compress error: ", err)
+	// 	return
+	// }
+	buf := bytes.NewBuffer(p)
+	return hb.WriteStream(db, buf, false)
 }
 
+//写入压缩数据
 func (hb *HttpBackend) WriteCompressed(db string, p []byte) (err error) {
 	buf := bytes.NewBuffer(p)
 	return hb.WriteStream(db, buf, true)
+}
+
+//非压缩：写入数据
+func (hb *HttpBackend) WriteUNCompressed(db string, p []byte) (err error) {
+	buf := bytes.NewBuffer(p)
+	return hb.WriteStream(db, buf, false)
 }
 
 func (hb *HttpBackend) WriteStream(db string, stream io.Reader, compressed bool) (err error) {
@@ -192,6 +201,8 @@ func (hb *HttpBackend) WriteStream(db string, stream io.Reader, compressed bool)
 	if hb.Username != "" || hb.Password != "" {
 		hb.SetBasicAuth(req)
 	}
+
+	//压缩可能会内存泄漏
 	if compressed {
 		req.Header.Add("Content-Encoding", "gzip")
 	}
