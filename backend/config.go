@@ -5,12 +5,14 @@ import (
 	"errors"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/chengshiwen/influx-proxy/util"
 )
 
 const (
-	Version = "2.5.4"
+	//Version Tag
+	Version = "2.5.5"
 )
 
 var (
@@ -56,8 +58,12 @@ type ProxyConfig struct {
 	HTTPSEnabled    bool            `json:"https_enabled"`
 	HTTPSCert       string          `json:"https_cert"`
 	HTTPSKey        string          `json:"https_key"`
+	UDPEnable       bool            `json:"udp_enable"`
+	UDPBind         string          `json:"udp_bind"`
+	UDPDataBase     string          `json:"udp_database"`
 }
 
+//NewFileConfig is create a config from file
 func NewFileConfig(cfgfile string) (cfg *ProxyConfig, err error) {
 	cfg = &ProxyConfig{}
 	file, err := os.Open(cfgfile)
@@ -65,13 +71,13 @@ func NewFileConfig(cfgfile string) (cfg *ProxyConfig, err error) {
 		return
 	}
 	defer file.Close()
-	dec := json.NewDecoder(file)
-	err = dec.Decode(cfg)
+	dec := json.NewDecoder(file) //根据文件创建json解析体
+	err = dec.Decode(cfg)        //解析json数据到结构体数据结构
 	if err != nil {
 		return
 	}
-	cfg.setDefault()
-	err = cfg.checkConfig()
+	cfg.setDefault()        //为配置结构体设置默认值
+	err = cfg.checkConfig() //检测配置是否正确
 	if err != nil {
 		return
 	}
@@ -118,7 +124,7 @@ func (cfg *ProxyConfig) checkConfig() (err error) {
 	if len(cfg.Circles) == 0 {
 		return ErrEmptyCircles
 	}
-	set := util.NewSet()
+	set := util.NewSet() //非并发安全：集合数据结构
 	for _, circle := range cfg.Circles {
 		if len(circle.Backends) == 0 {
 			return ErrEmptyBackends
@@ -133,12 +139,20 @@ func (cfg *ProxyConfig) checkConfig() (err error) {
 			set.Add(backend.Name)
 		}
 	}
-	if cfg.HashKey != "idx" && cfg.HashKey != "exi" && cfg.HashKey != "name" && cfg.HashKey != "url" {
+
+	switch strings.ToLower(cfg.HashKey) {
+	case "idx":
+	case "exi":
+	case "name":
+	case "url":
+	default:
 		return ErrInvalidHashKey
 	}
+
 	return
 }
 
+//PrintSummary is print influxDB cluster summary data
 func (cfg *ProxyConfig) PrintSummary() {
 	log.Printf("%d circles loaded from file", len(cfg.Circles))
 	for id, circle := range cfg.Circles {
