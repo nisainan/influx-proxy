@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/chengshiwen/influx-proxy/util"
@@ -43,6 +44,7 @@ type HttpBackend struct { // nolint:golint
 	Password   string
 	AuthSecure bool
 	Active     bool
+	sync.RWMutex
 }
 
 func NewHttpBackend(cfg *BackendConfig, pxcfg *ProxyConfig) (hb *HttpBackend) { // nolint:golint
@@ -145,13 +147,29 @@ func SetBasicAuth(req *http.Request, username string, password string, authSecur
 	}
 }
 
+func (hb *HttpBackend) SetActive(active bool) {
+	hb.Lock()
+	defer hb.Unlock()
+	hb.Active = active
+}
+
+func (hb *HttpBackend) IsActive() bool {
+	hb.RLock()
+	defer hb.RUnlock()
+	return hb.Active
+}
+
+
 func (hb *HttpBackend) SetBasicAuth(req *http.Request) {
 	SetBasicAuth(req, hb.Username, hb.Password, hb.AuthSecure)
 }
 
 func (hb *HttpBackend) CheckActive() {
 	for {
-		hb.Active = hb.Ping()
+		ping := hb.Ping()
+		hb.Lock()
+		hb.Active = ping
+		hb.Unlock()
 		time.Sleep(time.Duration(hb.interval) * time.Second)
 	}
 }
@@ -210,7 +228,7 @@ func (hb *HttpBackend) WriteStream(db string, stream io.Reader, compressed bool)
 	resp, err := hb.client.Do(req)
 	if err != nil {
 		log.Print("http error: ", err)
-		hb.Active = false
+		hb.SetActive(false)
 		return
 	}
 	defer resp.Body.Close()
