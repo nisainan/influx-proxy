@@ -43,7 +43,7 @@ type ProxyConfig struct {
 	DataDir         string          `json:"data_dir"`
 	TLogDir         string          `json:"tlog_dir"`
 	HashKey         string          `json:"hash_key"`
-	FlushSize       int             `json:"flush_size"`
+	FlushSize       uint64             `json:"flush_size"`
 	FlushTime       int             `json:"flush_time"`
 	CheckInterval   int             `json:"check_interval"`
 	RewriteInterval int             `json:"rewrite_interval"`

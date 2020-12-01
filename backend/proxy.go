@@ -148,7 +148,7 @@ func (ip *Proxy) Query(w http.ResponseWriter, req *http.Request) (body []byte, e
 				continue
 			}
 			be := circle.GetBackend(key)
-			if be.Active {
+			if be.IsActive() {
 				qr := be.Query(req, w, false)
 				if qr.Status > 0 || len(badSet) == len(ip.Circles)-1 {
 					return qr.Body, qr.Err

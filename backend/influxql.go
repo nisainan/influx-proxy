@@ -209,6 +209,8 @@ func getMeasurement(tokens []string) (m string) {
 		if len(tokens) > 3 && tokens[1] == "." {
 			if len(tokens) >= 5 && tokens[3] == "." {
 				m = tokens[4]
+			} else if tokens[1] == "." {
+				m = tokens[2]
 			} else {
 				m = tokens[0]
 			}

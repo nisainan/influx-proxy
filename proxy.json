@@ -5,7 +5,21 @@
             "backends": [
                 {
                     "name": "influxdb-1-1",
-                    "url": "http://192.168.2.97:8086",
+                    "url": "http://10.20.1.100:8086",
+                    "username": "root",
+                    "password": "123456",
+                    "auth_secure": false
+                },
+                {
+                    "name": "influxdb-1-2",
+                    "url": "http://10.20.1.100:8087",
+                    "username": "root",
+                    "password": "123456",
+                    "auth_secure": false
+                },
+                {
+                    "name": "influxdb-1-3",
+                    "url": "http://10.20.1.100:8088",
                     "username": "root",
                     "password": "123456",
                     "auth_secure": false
@@ -17,7 +31,21 @@
             "backends": [
                 {
                     "name": "influxdb-2-1",
-                    "url": "http://192.168.2.80:8086",
+                    "url": "http://10.20.4.132:8086",
+                    "username": "root",
+                    "password": "123456",
+                    "auth_secure": false
+                },
+                {
+                    "name": "influxdb-2-2",
+                    "url": "http://10.20.4.132:8087",
+                    "username": "root",
+                    "password": "123456",
+                    "auth_secure": false
+                },
+                {
+                    "name": "influxdb-2-3",
+                    "url": "http://10.20.4.132:8088",
                     "username": "root",
                     "password": "123456",
                     "auth_secure": false
@@ -40,7 +68,7 @@
     "username": "",
     "password": "",
     "auth_secure": false,
-    "write_tracing": false,
+    "write_tracing": true,
     "query_tracing": true,
     "https_enabled": false,
     "https_cert": "",

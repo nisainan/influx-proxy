@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/panjf2000/ants/v2"
@@ -14,7 +15,7 @@ import (
 
 type CacheBuffer struct {
 	Buffer  *bytes.Buffer
-	Counter int
+	Counter uint64
 }
 
 type Backend struct {
@@ -22,7 +23,7 @@ type Backend struct {
 	fb   *FileBackend
 	pool *ants.Pool
 
-	flushSize       int
+	flushSize       uint64
 	flushTime       int
 	rewriteInterval int
 	rewriteTicker   *time.Ticker
@@ -98,7 +99,9 @@ func (ib *Backend) WriteBuffer(point *LinePoint) (err error) {
 		ib.buffers[db] = &CacheBuffer{Buffer: &bytes.Buffer{}}
 		cb = ib.buffers[db]
 	}
-	cb.Counter++
+
+	atomic.AddUint64(&cb.Counter,1)
+	//cb.Counter++
 	if cb.Buffer == nil {
 		cb.Buffer = &bytes.Buffer{}
 	}
@@ -121,32 +124,29 @@ func (ib *Backend) WriteBuffer(point *LinePoint) (err error) {
 	}
 
 	switch {
-	case cb.Counter >= ib.flushSize:
-		err = ib.FlushBuffer(db)
-		if err != nil {
-			return
-		}
+	case atomic.LoadUint64(&cb.Counter) >= ib.flushSize:
+		ib.FlushBuffer(db)
 	case ib.chTimer == nil:
 		ib.chTimer = time.After(time.Duration(ib.flushTime) * time.Second)
 	}
 	return
 }
 
-func (ib *Backend) FlushBuffer(db string) (err error) {
+func (ib *Backend) FlushBuffer(db string) {
 	cb := ib.buffers[db]
 	if cb.Buffer == nil {
 		return
 	}
 	p := cb.Buffer.Bytes()
+	ib.Lock()
 	cb.Buffer = nil
 	cb.Counter = 0
+	ib.Unlock()
 	if len(p) == 0 {
 		return
 	}
 
-	ib.wg.Add(1)
 	ib.pool.Submit(func() {
-		defer ib.wg.Done()
 		//关闭压缩、此处有内存泄漏
 		// var buf bytes.Buffer
 		// err = Compress(&buf, p)
@@ -157,8 +157,8 @@ func (ib *Backend) FlushBuffer(db string) (err error) {
 
 		// p = buf.Bytes()
 
-		if ib.Active {
-			err = ib.WriteUNCompressed(db, p)
+		if ib.IsActive() {
+			err := ib.WriteUNCompressed(db, p)
 			switch err {
 			case nil:
 				return
@@ -174,37 +174,38 @@ func (ib *Backend) FlushBuffer(db string) (err error) {
 		}
 
 		b := bytes.Join([][]byte{[]byte(url.QueryEscape(db)), p}, []byte{' '})
-		err = ib.fb.Write(b)
+		err := ib.fb.Write(b)
 		if err != nil {
 			log.Printf("write db and data to file error with db: %s, length: %d error: %s", db, len(p), err)
-			return
 		}
 	})
-	return
 }
 
 func (ib *Backend) Flush() {
 	ib.chTimer = nil
 	for db := range ib.buffers {
-		if ib.buffers[db].Counter > 0 {
-			err := ib.FlushBuffer(db)
-			if err != nil {
-				log.Printf("flush buffer background error: %s %s", ib.Url, err)
-			}
+		if atomic.LoadUint64(&ib.buffers[db].Counter) > 0 {
+			ib.FlushBuffer(db)
 		}
 	}
 }
 
+func (ib *Backend) SetRewriteRunning(running bool) {
+	ib.Lock()
+	defer ib.Unlock()
+	ib.rewriteRunning = running
+}
+
 func (ib *Backend) RewriteIdle() {
 	if !ib.rewriteRunning && ib.fb.IsData() {
-		ib.rewriteRunning = true
+		ib.SetRewriteRunning(true)
 		go ib.RewriteLoop()
 	}
 }
 
 func (ib *Backend) RewriteLoop() {
 	for ib.fb.IsData() {
-		if !ib.Active {
+		if !ib.IsActive() {
 			time.Sleep(time.Duration(ib.rewriteInterval) * time.Second)
 			continue
 		}
@@ -305,7 +306,7 @@ func (ib *Backend) GetHealth(ic *Circle) map[string]interface{} {
 	return map[string]interface{}{
 		"name":    ib.Name,
 		"url":     ib.Url,
-		"active":  ib.Active,
+		"active":  ib.IsActive(),
 		"backlog": ib.fb.IsData(),
 		"rewrite": ib.rewriteRunning,
 		"stats":   stats,
